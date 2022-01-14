@@ -16,6 +16,7 @@ namespace EasyNChat.Services
     {
         private LogService log;
         private WebSocketManager server;
+        public bool IsRunning = false;
         public WebSocketService(LogService logService)
         {
             log = logService;
@@ -37,6 +38,7 @@ namespace EasyNChat.Services
                 server.AddStaticContent(www, "/wschat");
                 server.Start();
                 log.LogInformation("WebSocket Chat Service Is Running.");
+                IsRunning = true;
             }
 
         }
@@ -44,6 +46,8 @@ namespace EasyNChat.Services
         public void StopService()
         {
             server.Stop();
+            IsRunning = false;
+            GlobalInfo.NodeInfo.Redis.KeyDelete("EasyNChat_" + GlobalInfo.NodeInfo.NodeName + "_User");
             log.LogInformation("WebSocket Chat Service Is Stoped.");
         }
     }

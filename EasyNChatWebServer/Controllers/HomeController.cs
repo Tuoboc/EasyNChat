@@ -6,7 +6,6 @@ namespace EasyNChatWebServer.Controllers
     {
         public IActionResult Index()
         {
-            public 
             return View();
         }
     }

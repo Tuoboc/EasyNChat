@@ -18,13 +18,15 @@ namespace EasyNChat.Services
         private readonly IHostApplicationLifetime _appLifetime;
         private readonly LogService log;
         private readonly SendMessageService sendService;
+        private readonly WebSocketService socketService;
 
-        public InitService(IConfiguration configuration, IHostApplicationLifetime appLifetime, LogService logger, SendMessageService sendMessageService)
+        public InitService(IConfiguration configuration, IHostApplicationLifetime appLifetime, LogService logger, SendMessageService sendMessageService, WebSocketService webSocketService)
         {
             config = configuration;
             _appLifetime = appLifetime;
             log = logger;
             sendService = sendMessageService;
+            socketService = webSocketService;
         }
 
         private void InitNodeInfo()
@@ -101,6 +103,10 @@ namespace EasyNChat.Services
                 GlobalInfo.NodeInfo.Redis.StringSet("EasyNChat_Servers_Info", JsonSerializer.Serialize(nodeList));
                 GlobalInfo.NodeInfo.Sub.Unsubscribe(GlobalInfo.NodeInfo.RecieveSubName);
                 log.LogInformation("SendMessageService is stoped.");
+                if (socketService.IsRunning)
+                {
+                    socketService.StopService();
+                }
             }
             return Task.CompletedTask;
         }

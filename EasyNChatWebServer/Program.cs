@@ -6,11 +6,11 @@ var builder = WebApplication.CreateBuilder(args);
 
 builder.Services.AddControllers();
 builder.Services.AddEasyNChat();
+builder.Services.AddEasyNWsChat();
 var app = builder.Build();
 
 // Configure the HTTP request pipeline.
 
 app.UseAuthorization();
 app.MapControllers();
-app.UseWsEasyNChat();
 app.Run();

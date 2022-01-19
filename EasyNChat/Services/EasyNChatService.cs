@@ -1,4 +1,5 @@
-﻿using EasyNChat.Models;
+﻿using EasyNChat.Interfaces;
+using EasyNChat.Models;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.Hosting;
 using StackExchange.Redis;
@@ -12,23 +13,22 @@ using System.Threading.Tasks;
 
 namespace EasyNChat.Services
 {
-    internal class InitService : IHostedService
+    internal class EasyNChatService : IHostedService
     {
         IConfiguration config;
         private readonly IHostApplicationLifetime _appLifetime;
         private readonly LogService log;
-        private readonly SendMessageService sendService;
-        private readonly WebSocketService socketService;
 
-        public InitService(IConfiguration configuration, IHostApplicationLifetime appLifetime, LogService logger, SendMessageService sendMessageService, WebSocketService webSocketService)
+        public EasyNChatService(IConfiguration configuration, IHostApplicationLifetime appLifetime, LogService logger)
         {
             config = configuration;
             _appLifetime = appLifetime;
             log = logger;
-            sendService = sendMessageService;
-            socketService = webSocketService;
         }
+        public EasyNChatService(WsEasyNChatConfig config)
+        {
 
+        }
         private void InitNodeInfo()
         {
             ServerNodeInfo nodeInfo = new ServerNodeInfo();
@@ -75,9 +75,8 @@ namespace EasyNChat.Services
             }
 
             nodeList.Add(nodeInfo);
-            nodeInfo.Redis.StringSet("EasyNChat_Servers_Info", JsonSerializer.Serialize(nodeList));
             nodeInfo.IsRunning = true;
-
+            nodeInfo.Redis.StringSet("EasyNChat_Servers_Info", JsonSerializer.Serialize(nodeList));
         }
 
         public Task StartAsync(CancellationToken cancellationToken)
@@ -85,8 +84,8 @@ namespace EasyNChat.Services
             InitNodeInfo();
             if (GlobalInfo.NodeInfo.IsRunning)
             {
-                GlobalInfo.NodeInfo.Sub.Subscribe(GlobalInfo.NodeInfo.RecieveSubName).OnMessage(msg => sendService.SendMessage(msg));
-                log.LogInformation("SendMessageService is Started.");
+                GlobalInfo.NodeInfo.Sub.Subscribe(GlobalInfo.NodeInfo.RecieveSubName).OnMessage(msg => SendMessage(msg));
+                log.LogInformation("EasyNChat is running.");
             }
             return Task.CompletedTask;
         }
@@ -102,13 +101,14 @@ namespace EasyNChat.Services
                 nodeList.Remove(node);
                 GlobalInfo.NodeInfo.Redis.StringSet("EasyNChat_Servers_Info", JsonSerializer.Serialize(nodeList));
                 GlobalInfo.NodeInfo.Sub.Unsubscribe(GlobalInfo.NodeInfo.RecieveSubName);
-                log.LogInformation("SendMessageService is stoped.");
-                if (socketService.IsRunning)
-                {
-                    socketService.StopService();
-                }
+                log.LogInformation("EasyNChat is stoped.");
             }
             return Task.CompletedTask;
+        }
+
+        public void SendMessage(ChannelMessage message)
+        {
+            log.LogInformation(message.Message.ToString());
         }
     }
 }

@@ -3,14 +3,17 @@ using NetCoreServer;
 using System;
 using System.Collections.Generic;
 using System.Net;
+using System.Reflection;
 using System.Text;
 
 namespace EasyNChat.WebSocket
 {
-    internal class WebSocketManager : WsServer
+    public class WebSocketManager<T> : WsServer where T : WebSocketSession, new()
     {
-        public WebSocketManager(IPAddress address, int port) : base(address, port)
+
+        public WebSocketManager() : base(IPAddress.Any, GlobalInfo.NodeInfo.WsPort)
         {
+
         }
 
         protected override void OnConnected(TcpSession session)
@@ -20,8 +23,8 @@ namespace EasyNChat.WebSocket
 
         protected override TcpSession CreateSession()
         {
-            var session = new WebSocketSession(this);
-
+            var session = new T();
+            session.SetServer(this);
             return session;
         }
     }

@@ -3,6 +3,7 @@ using NetCoreServer;
 using System;
 using System.Collections.Generic;
 using System.Text;
+using System.Text.Json;
 
 namespace EasyNChat.WebSocket
 {
@@ -12,6 +13,14 @@ namespace EasyNChat.WebSocket
         {
         }
 
+        public WebSocketSession()
+        {
+
+        }
+        public void SetServer(WsServer server)
+        {
+            base.SetWsServer(server);
+        }
         public override void OnWsConnected(HttpRequest request)
         {
             if (!RequestIsPermission())
@@ -35,7 +44,7 @@ namespace EasyNChat.WebSocket
         public override void OnWsReceived(byte[] buffer, long offset, long size)
         {
             string message = Encoding.UTF8.GetString(buffer, (int)offset, (int)size);
-
+            var data = JsonSerializer.Deserialize<MessageData>(message);
         }
 
         public virtual bool RequestIsPermission()

@@ -10,8 +10,11 @@
     <PackageReference Include="Microsoft.Extensions.DependencyInjection.Abstractions" Version="6.0.0" />
     <PackageReference Include="Microsoft.Extensions.Hosting.Abstractions" Version="6.0.0" />
     <PackageReference Include="Microsoft.Extensions.Logging.Abstractions" Version="6.0.0" />
-    <PackageReference Include="NetCoreServer" Version="3.0.22" />
     <PackageReference Include="StackExchange.Redis" Version="2.2.88" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\NetCoreServer\NetCoreServer.csproj" />
   </ItemGroup>
 
 </Project>

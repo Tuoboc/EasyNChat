@@ -7,7 +7,7 @@ namespace EasyNChat.Models
     public class MessageData
     {
         public MessageDataType DataType { get; set; }
-        public string UserInId { get; set; }
+        public string UserId { get; set; }
         public string ToUserId { get; set; }
         public byte[] Data { get; set; }
     }

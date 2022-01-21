@@ -1,6 +1,9 @@
 ﻿using EasyNChat.Interfaces;
 using EasyNChat.Models;
+using EasyNChat.WebSocket;
+using Microsoft.AspNetCore.Builder;
 using Microsoft.Extensions.Configuration;
+using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
 using StackExchange.Redis;
 using System;
@@ -13,22 +16,26 @@ using System.Threading.Tasks;
 
 namespace EasyNChat.Services
 {
-    internal class EasyNChatService : IHostedService
+    public class EasyNChatService<T> where T : WebSocketSession, new()
     {
         IConfiguration config;
-        private readonly IHostApplicationLifetime _appLifetime;
         private readonly LogService log;
+        IServiceProvider service;
+        IHostApplicationLifetime lifetime;
 
-        public EasyNChatService(IConfiguration configuration, IHostApplicationLifetime appLifetime, LogService logger)
+        public EasyNChatService(IConfiguration configuration, LogService logger, IServiceProvider serviceProvider, IHostApplicationLifetime applicationLifetime)
         {
             config = configuration;
-            _appLifetime = appLifetime;
             log = logger;
+            service = serviceProvider;
+            lifetime = applicationLifetime;
         }
         public EasyNChatService(WsEasyNChatConfig config)
         {
 
         }
+
+
         private void InitNodeInfo()
         {
             ServerNodeInfo nodeInfo = new ServerNodeInfo();
@@ -55,12 +62,7 @@ namespace EasyNChat.Services
                 return;
             }
 
-            var nodeconfigList = nodeInfo.Redis.StringGet("EasyNChat_Servers_Info");
-            List<ServerNodeInfo> nodeList = new List<ServerNodeInfo>();
-            if (!nodeconfigList.IsNullOrEmpty)
-            {
-                nodeList = JsonSerializer.Deserialize<List<ServerNodeInfo>>(nodeconfigList);
-            }
+            var nodeList = GlobalInfo.GetServerInfo();
             if (!string.IsNullOrWhiteSpace(nodeInfo.NodeName))
             {
                 if (nodeList.Count(a => a.NodeName == nodeInfo.NodeName) > 0)
@@ -76,7 +78,7 @@ namespace EasyNChat.Services
 
             nodeList.Add(nodeInfo);
             nodeInfo.IsRunning = true;
-            nodeInfo.Redis.StringSet("EasyNChat_Servers_Info", JsonSerializer.Serialize(nodeList));
+            GlobalInfo.ChangeServerInfo(nodeList);
         }
 
         public Task StartAsync(CancellationToken cancellationToken)
@@ -84,31 +86,41 @@ namespace EasyNChat.Services
             InitNodeInfo();
             if (GlobalInfo.NodeInfo.IsRunning)
             {
-                GlobalInfo.NodeInfo.Sub.Subscribe(GlobalInfo.NodeInfo.RecieveSubName).OnMessage(msg => SendMessage(msg));
+                GlobalInfo.NodeInfo.Sub.Subscribe(GlobalInfo.NodeInfo.RecieveSubName).OnMessage(msg => { SendMessage<T>(msg); });
                 log.LogInformation("EasyNChat is running.");
             }
+            lifetime.ApplicationStopping.Register(StopAsync);
             return Task.CompletedTask;
         }
 
-        public Task StopAsync(CancellationToken cancellationToken)
+        public void StopAsync()
         {
 
             if (GlobalInfo.NodeInfo.IsRunning)
             {
-                var nodeconfigList = GlobalInfo.NodeInfo.Redis.StringGet("EasyNChat_Servers_Info");
-                var nodeList = JsonSerializer.Deserialize<List<ServerNodeInfo>>(nodeconfigList);
-                var node = nodeList.FirstOrDefault(a => a.RandomId == GlobalInfo.NodeInfo.RandomId);
-                nodeList.Remove(node);
-                GlobalInfo.NodeInfo.Redis.StringSet("EasyNChat_Servers_Info", JsonSerializer.Serialize(nodeList));
+                GlobalInfo.DeleteServerInfo();
+                GlobalInfo.DeleteUserInfo();
                 GlobalInfo.NodeInfo.Sub.Unsubscribe(GlobalInfo.NodeInfo.RecieveSubName);
                 log.LogInformation("EasyNChat is stoped.");
             }
-            return Task.CompletedTask;
         }
 
-        public void SendMessage(ChannelMessage message)
+
+        public void SendMessage<T>(ChannelMessage message) where T : WebSocketSession, new()
         {
-            log.LogInformation(message.Message.ToString());
+            var ToUser = JsonSerializer.Deserialize<MessageData>(message.Message.ToString());
+            var touser = GlobalInfo.GetUserInfo(ToUser.ToUserId);
+            if (touser != null && touser.ConnectNodeName == GlobalInfo.NodeInfo.NodeName)
+            {
+                var ws = service.GetService<WebSocketService<T>>();
+                if (ws != null)
+                {
+                    var sendbyte = System.Text.UTF8Encoding.UTF8.GetBytes(message.Message.ToString());
+                    var session = ws.server.FindSession(touser.SessionId);
+                    var se = session as T;
+                    se.SendMessage(ToUser);
+                }
+            }
         }
     }
 }

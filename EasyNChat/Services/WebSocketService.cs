@@ -15,10 +15,10 @@ using System.Threading.Tasks;
 
 namespace EasyNChat.Services
 {
-    public class WebSocketService<T> : IHostedService where T : WebSocketSession, new()
+    public class WebSocketService<T> where T : WebSocketSession, new()
     {
         private LogService log;
-        private WebSocketManager<T> server;
+        public WebSocketManager<T> server;
         public bool IsRunning { get; set; } = false;
         public WebSocketService(LogService logService)
         {
@@ -36,7 +36,7 @@ namespace EasyNChat.Services
                     log.LogError("60 secoends");
                     return;
                 }
-                   
+
             }
             if (GlobalInfo.NodeInfo.IsRunning)
             {
@@ -46,15 +46,13 @@ namespace EasyNChat.Services
                     System.IO.Directory.CreateDirectory(path);
                 server.AddStaticContent(path, "/wschat");
                 server.Start();
-                log.LogInformation("WebSocket Chat Service Is Running.");
+                log.LogInformation("WebSocket Chat Service Is Listening at ws://0.0.0.0:" + GlobalInfo.NodeInfo.WsPort + "/wschat");
                 IsRunning = true;
             }
         }
 
         public Task StopAsync(CancellationToken cancellationToken)
         {
-            IsRunning = false;
-            GlobalInfo.NodeInfo.Redis.KeyDelete("EasyNChat_" + GlobalInfo.NodeInfo.NodeName + "_User");
             log.LogInformation("WebSocket Chat Service Is Stoped.");
             return Task.CompletedTask;
         }

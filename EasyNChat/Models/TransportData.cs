@@ -10,6 +10,7 @@ namespace EasyNChat.Models
         public string UserId { get; set; }
         public string ToUserId { get; set; }
         public byte[] Data { get; set; }
+        public string Message { get; set; }
     }
 
     public enum MessageDataType

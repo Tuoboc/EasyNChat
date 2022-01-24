@@ -32,7 +32,7 @@ namespace EasyNChat.WebSocket
             else
             {
                 var userinfo = SetUserInfo(request);
-                userinfo.ConnectType = ConnectType.WebSocket;
+                userinfo.SetConnectionInfo(Id, GlobalInfo.NodeInfo.NodeName, GlobalInfo.NodeInfo.RecieveSubName, ConnectType.WebSocket);
                 UserId = userinfo.UserId;
                 GlobalInfo.AddUserInfo(userinfo);
                 base.OnWsConnected(request);
@@ -61,39 +61,44 @@ namespace EasyNChat.WebSocket
             }
         }
 
+        /// <summary>
+        /// Check if the connection is allowed to continue
+        /// </summary>
+        /// <param name="request"></param>
+        /// <returns></returns>
         public virtual bool RequestIsPermission(HttpRequest request)
         {
             return true;
         }
+        /// <summary>
+        /// if RequestIsPermission method return false,this string will return to the client
+        /// </summary>
+        /// <returns></returns>
         public virtual string NotPermissionReturn()
         {
             return "NOT PERMISSION";
         }
-
+        /// <summary>
+        /// save the userinfo to the redis
+        /// </summary>
+        /// <param name="request"></param>
+        /// <returns></returns>
         public virtual UserInfo SetUserInfo(HttpRequest request)
         {
-            UserInfo userInfo = new UserInfo();
-            if (request.Url.Split('?').Length >= 2)
-            {
-                foreach (var paras in request.Url.Split('?')[1].Split('&'))
-                {
-                    string para = paras.Split('=')[0];
-                    string val = paras.Split('=')[1];
-                    if (para == "userid")
-                    {
-
-                        userInfo.UserId = val;
-                        userInfo.SessionId = Id;
-                        userInfo.ConnectNodeName = GlobalInfo.NodeInfo.NodeName;
-                        userInfo.RecieveSubName = GlobalInfo.NodeInfo.RecieveSubName;
-                    }
-                }
-            }
-            return userInfo;
+            return null;
         }
 
+        public virtual void BeforeSendMessage(MessageData message)
+        {
+
+        }
+        public virtual void AfterSendMessage(MessageData message)
+        {
+
+        }
         public void SendMessage(MessageData message)
         {
+            BeforeSendMessage(message);
             if (message != null)
             {
                 if (message.DataType == MessageDataType.Text)
@@ -105,6 +110,7 @@ namespace EasyNChat.WebSocket
 
                 }
             }
+            AfterSendMessage(message);
         }
     }
 }

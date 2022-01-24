@@ -1,5 +1,6 @@
 using EasyNChat.Services;
 using EasyNChat.WebSocket;
+using EasyNChatWebServer.Models;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -7,12 +8,12 @@ var builder = WebApplication.CreateBuilder(args);
 
 builder.Services.AddControllers();
 
-builder.Services.AddEasyNWsChat();
+builder.Services.AddEasyNWsChat<WsChatDemo>();
 
 var app = builder.Build();
 
 // Configure the HTTP request pipeline.
-app.UseEasyNWsChat();
+app.UseEasyNWsChat<WsChatDemo>();
 app.UseAuthorization();
 app.MapControllers();
 app.Run();

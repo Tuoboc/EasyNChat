@@ -49,6 +49,8 @@ namespace EasyNChat.Services
         {
             var service = builder.ApplicationServices.GetService<EasyNChatService<T>>();
             service.StartAsync(new CancellationToken());
+            var service2 = builder.ApplicationServices.GetService<WebSocketService<T>>();
+            service2.StartAsync(new CancellationToken());
             return builder;
         }
     }
